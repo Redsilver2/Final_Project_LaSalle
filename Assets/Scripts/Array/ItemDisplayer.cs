@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Redsilver2.Array
 {
@@ -10,6 +11,7 @@ namespace Redsilver2.Array
     {
 
         [SerializeField] private TextMeshProUGUI informationDisplayer;
+        [SerializeField] private Image levelupFillbar;
 
         [Space]
         [SerializeField] private float rotationSpeed     = 5f;
@@ -74,8 +76,9 @@ namespace Redsilver2.Array
             if(items.Length > 0)
             {
                 Item currentItem = items[currentIndex];
-                SetInformationText(currentItem.ToString());
-
+                SetInformationText(currentItem);
+                currentItem.GainExperience(10f * Time.deltaTime);
+                                
                 DisplayItem(items, currentIndex, Vector3.up * currentItemPositionY);
                 DisplayItems(items, currentItem);
             }
@@ -122,10 +125,27 @@ namespace Redsilver2.Array
 
         }
 
+        private async void SetInformationText(Item item)
+        {
+            if (item != null)
+            {
+                string details = await item.GetDetails();
+                SetInformationText(details);    
+            }
+        }
+
         private void SetInformationText(string text)
         {
             if (informationDisplayer != null)
                 informationDisplayer.text = text;
+        }
+
+        private void SetLevelupFillBar(Item item)
+        {
+            if (levelupFillbar != null && item != null)
+            {
+                levelupFillbar.fillAmount = item.GetLevelUpProgress();
+            }
         }
 
         private void DisplayItem(Item[] items, int selectableIndex, Vector3 desiredPosition)
