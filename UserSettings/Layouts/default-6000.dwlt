@@ -1174,7 +1174,7 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 545.9775, y: -14.793889, z: 2.3643188}
+    m_Target: {x: 319.10977, y: 271.14835, z: -1.1335744}
     speed: 2
     m_Value: {x: 545.9775, y: -14.793889, z: 2.3643188}
   m_RenderMode: 0
@@ -1226,7 +1226,7 @@ MonoBehaviour:
     speed: 2
     m_Value: {x: 0, y: 0, z: 0, w: 1}
   m_Size:
-    m_Target: 147.81197
+    m_Target: 138.37524
     speed: 2
     m_Value: 147.81197
   m_Ortho:
@@ -1381,7 +1381,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Scenes/Scripts
+    - Assets/Scenes
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1400,7 +1400,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: fcb20000
     m_LastClickedID: 45820
-    m_ExpandedIDs: 0000000040b00000
+    m_ExpandedIDs: 0000000082b00000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1429,7 +1429,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 0000000040b00000
+    m_ExpandedIDs: 0000000082b00000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 

@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using TMPro;
 using UnityEngine;
 
 namespace Redsilver2.Array
@@ -7,6 +9,9 @@ namespace Redsilver2.Array
     public class ItemDisplayer : MonoBehaviour
     {
 
+        [SerializeField] private TextMeshProUGUI informationDisplayer;
+
+        [Space]
         [SerializeField] private float rotationSpeed     = 5f;
         [SerializeField] private float bounceSpeed       = 5f;
         [SerializeField] private float positionLerpSpeed = 3f;
@@ -18,6 +23,7 @@ namespace Redsilver2.Array
         private float currentItemPositionY;
         private int currentIndex = 0;
 
+        private bool canUpdate = true;
         private Item[] items = null;
 
         private void Awake()
@@ -25,19 +31,40 @@ namespace Redsilver2.Array
             items = FindObjectsByType<Item>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         }
 
-        private void Update()
+        private async void Update()
         {
+            if (!canUpdate)
+            {
+                SetInformationText(string.Empty);
+                return;
+            }
+
             if (Input.GetKeyDown(KeyCode.A))
-              SetCurrentIndex(items, true);
-            else if (Input.GetKeyDown(KeyCode.D))
               SetCurrentIndex(items, false);
+         
+            if (Input.GetKeyDown(KeyCode.D))
+              SetCurrentIndex(items, true);
+
+            if (Input.GetKeyDown(KeyCode.R))
+                GenerateRandomIDForItems();
+
+
+            if (Input.GetKeyDown(KeyCode.Alpha1))
+               items = await SortArray(items);
+
 
             currentItemPositionY = Mathf.Lerp(-maxItemHeight, maxItemHeight, Mathf.Abs(Mathf.Sin(Time.time * bounceSpeed)));
         }
 
         private void LateUpdate()
         {
+            if (!canUpdate) return;
             DisplayItems(items);
+        }
+
+        private void GenerateRandomIDForItems()
+        {
+            foreach (Item item in items) item.GenerateRandomID();
         }
 
         private void DisplayItems(Item[] items)
@@ -46,7 +73,9 @@ namespace Redsilver2.Array
 
             if(items.Length > 0)
             {
-                Item currentItem = items[currentIndex];     
+                Item currentItem = items[currentIndex];
+                SetInformationText(currentItem.ToString());
+
                 DisplayItem(items, currentIndex, Vector3.up * currentItemPositionY);
                 DisplayItems(items, currentItem);
             }
@@ -93,6 +122,12 @@ namespace Redsilver2.Array
 
         }
 
+        private void SetInformationText(string text)
+        {
+            if (informationDisplayer != null)
+                informationDisplayer.text = text;
+        }
+
         private void DisplayItem(Item[] items, int selectableIndex, Vector3 desiredPosition)
         {
             ClampItemIndex(items, ref selectableIndex);
@@ -122,7 +157,67 @@ namespace Redsilver2.Array
         {
             if(items == null) return;
             if(itemIndex < 0)                   itemIndex = items.Length - 1;
-            else if (itemIndex >= items.Length) itemIndex = items.Length - 1;
+            else if (itemIndex >= items.Length) itemIndex = 0;
+        }
+
+        private async Task<Item[]>SortArray(Item[] items)
+        {
+            canUpdate = false;
+
+            for (int i = 0; i < items.Length - 1; i++)
+                for (int j = 0; j < items.Length - i - 1; j++)
+                    if (items[j].ID > items[j + 1].ID)
+                    {
+                        Item tempVar = items[j];
+                        items[j] = items[j + 1];
+                        items[j + 1] = tempVar;
+
+                        VisualizeSorting(items[j], tempVar, 1f);
+                        await Awaitable.WaitForSecondsAsync(1f);
+                    }
+
+            canUpdate = true;
+            return items;
+        }
+
+        private async void VisualizeSorting(Item item01, Item item02, float duration)
+        {
+
+            if(item01 != null && item02 != null)
+            {
+                duration /= 3f;
+                await Visualize(item01.transform.position + Vector3.up * 5, item02.transform.position + Vector3.up * 5, duration);
+                await Visualize(item02.transform.position                 , item01.transform.position                                  , duration);
+                await Visualize(item01.transform.position - Vector3.up * 5, item02.transform.position - Vector3.up * 5, duration);
+            }
+
+            async Task Visualize(Vector3 endPosition01, Vector3 endPosition02, float duration)
+            {
+                float t = 0f;
+                Vector3 startPosition01, startPosition02;
+
+                startPosition01 = item01.transform.position;
+                startPosition02 = item02.transform.position;
+
+                while (t < duration)
+                {
+                    float progress = t / duration;
+                    LerpPosition(item01.transform, startPosition01, endPosition01, progress);
+                    LerpPosition(item02.transform, startPosition02, endPosition02, progress);
+
+                    t += Time.deltaTime;
+                    await Task.Yield();
+                }
+
+                item01.transform.position = endPosition01;
+                item02.transform.position = endPosition02;
+
+                void LerpPosition(Transform transform, Vector3 startPosition, Vector3 endPosition, float progression)
+                {
+                    progression = Mathf.Clamp01(progression);
+                    transform.position = Vector3.Lerp(startPosition, endPosition, progression);
+                }
+            }
         }
     }
 }
