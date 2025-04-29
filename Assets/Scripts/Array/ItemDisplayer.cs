@@ -9,8 +9,9 @@ namespace Redsilver2.Array
 {
     public class ItemDisplayer : MonoBehaviour
     {
-
         [SerializeField] private TextMeshProUGUI informationDisplayer;
+        [SerializeField] private TextMeshProUGUI abilitiesDisplayer;
+
         [SerializeField] private Image levelupFillbar;
 
         [Space]
@@ -38,6 +39,7 @@ namespace Redsilver2.Array
             if (!canUpdate)
             {
                 SetInformationText(string.Empty);
+                SetAbilityText(string.Empty);
                 return;
             }
 
@@ -76,8 +78,10 @@ namespace Redsilver2.Array
             if(items.Length > 0)
             {
                 Item currentItem = items[currentIndex];
-                SetInformationText(currentItem);
                 currentItem.GainExperience(10f * Time.deltaTime);
+
+                SetInformationText(currentItem);
+                SetAbilityText(currentItem);
                                 
                 DisplayItem(items, currentIndex, Vector3.up * currentItemPositionY);
                 DisplayItems(items, currentItem);
@@ -140,6 +144,21 @@ namespace Redsilver2.Array
                 informationDisplayer.text = text;
         }
 
+        private async void SetAbilityText(Item item)
+        {
+            if(item != null)
+            {
+                string result = await item.GetAbilitiesDetails();
+                SetAbilityText(result);
+            }
+        }
+
+        private void SetAbilityText(string text)
+        {
+            if (abilitiesDisplayer != null)
+                abilitiesDisplayer.text = text;
+        }
+
         private void SetLevelupFillBar(Item item)
         {
             if (levelupFillbar != null && item != null)
@@ -192,8 +211,8 @@ namespace Redsilver2.Array
                         items[j] = items[j + 1];
                         items[j + 1] = tempVar;
 
-                        VisualizeSorting(items[j], tempVar, 1f);
-                        await Awaitable.WaitForSecondsAsync(1f);
+                        VisualizeSorting(items[j], tempVar, 0.1f);
+                        await Awaitable.WaitForSecondsAsync(0.1f);
                     }
 
             canUpdate = true;

@@ -1,3 +1,4 @@
+using NUnit.Framework.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,23 +29,26 @@ namespace Redsilver2.Array
 
         public uint ID { get; private set; }
 
-        private async void Start()
+        private void Awake()
         {
-            if(abilityDatas.Length > 0f)
+            InitializeAbilities();
+            GenerateRandomID();
+        }
+
+        private async void InitializeAbilities()
+        {
+            if (abilityDatas.Length > 0f)
             {
                 abilityDatas = abilityDatas.DistinctBy(x => x.UnlockedLevel).ToArray();
-                mainAbility = new ItemAbility(abilityDatas[0].AbilityName, abilityDatas[0].AbilityDescription, abilityDatas[0].UnlockedLevel, abilityDatas[0].OnActivate);
 
-                for (int i = 1; i < abilityDatas.Length; i++)
+                for(int i = 0; i < abilityDatas.Length; i++)
                 {
                     AbilityData data = abilityDatas[i];
                     mainAbility = await InsertItemAbility(mainAbility, new ItemAbility(data.AbilityName, data.AbilityDescription, data.UnlockedLevel, data.OnActivate));
                 }
+
+                mainAbility = MergeSort(mainAbility);
             }
-     
-           
-            
-            GenerateRandomID();
         }
 
         public void GenerateRandomID()
@@ -72,6 +76,7 @@ namespace Redsilver2.Array
             return builder.ToString();
         }
 
+
         public void GainExperience(float amount)
         {
             currentExperience += amount;
@@ -91,7 +96,9 @@ namespace Redsilver2.Array
         {
             ItemAbility current;
 
-            if (mainAbility == null || newAbility == null) return mainAbility;
+            if (newAbility == null) return mainAbility;
+            else if (mainAbility == null) { return newAbility; }
+
             current =  mainAbility;
 
             await Task.Run(async () =>
@@ -133,51 +140,126 @@ namespace Redsilver2.Array
             return current;
         }
 
-        public async Task<ItemAbility[]> GetAbilitiesUnlocked(ItemAbility mainAbility)
+        private async Task<ItemAbility[]> GetAbilitiesUnlocked(ItemAbility mainAbility)
         {
-            ItemAbility       current;
-            List<ItemAbility> abilities;
-            
+            ItemAbility[] abilities;        
             if (mainAbility == null) { return null; }
-          
+     
+            abilities = await GetAllAbilities(mainAbility);
+            return abilities.Where(x => currentLevel >= x.UnlockedLevel).ToArray();
+        }
+
+        private async Task<ItemAbility[]> GetAllAbilities(ItemAbility mainAbility)
+        {
+            ItemAbility current;
+            List<ItemAbility> abilities;
+
+            if (mainAbility == null) { return null; }
+
             current   = mainAbility;
             abilities = new List<ItemAbility>();
 
             await Task.Run(async () =>
             {
-                while (current.next != null)
+                while (current != null)
                 {
-                    if (currentLevel <= current.UnlockedLevel)
-                        abilities.Add(current);
-                    else
-                        break;
-
+                    abilities.Add(current);
                     current = current.next;
                     await Task.Yield();
                 }
             });
 
-            return  abilities.ToArray();
+            return abilities.ToArray();
         }
 
-        public async Task<string> GetAbilitiesUnlockDetails(ItemAbility abilityUnlock)
+        public async Task<string> GetAbilitiesDetails()
         { 
             ItemAbility[] abilities;
             StringBuilder builder;
             
-            if (abilityUnlock == null) { return string.Empty; }
+            if (mainAbility == null) { return string.Empty; }
 
-            abilities = await GetAbilitiesUnlocked(abilityUnlock);
+            abilities = await GetAllAbilities(mainAbility);
             builder   = new StringBuilder();
 
-            foreach (ItemAbility ability in abilities) { builder.Append(ability.AbilityName).Append("\n"); }
+            builder.Append($"{itemName} Abilities:\n\n");
+
+
+            foreach (ItemAbility ability in abilities) 
+            {
+                AddText(builder, ability);
+                builder.Append("\n");
+            }
+
             return builder.ToString();
         }
+
+        private void AddText(StringBuilder builder,  ItemAbility item)
+        {
+            if(item != null && builder != null)
+            {
+                if (currentLevel < item.UnlockedLevel)
+                    builder.Append(item.UnlockRequierement());
+                else
+                    builder.Append(item.ToString());
+            }
+        }
+
+
+        ItemAbility Split(ItemAbility head)
+        {
+            ItemAbility result01 = head;
+            ItemAbility result02 = head;
+
+            while (result01 != null && result01.next != null)
+            {
+                result01 = result01.next.next;
+                if (result01 != null)
+                {
+                    result02 = result02.next;
+                }
+            }
+
+            ItemAbility temp = result02.next;
+            result02.next = null;
+            return temp;
+        }
+
+        ItemAbility Merge(ItemAbility ability01, ItemAbility ability02)
+        {
+            if (ability01 == null) return ability02;
+            if (ability02 == null) return ability01;
+
+            if (ability01.UnlockedLevel < ability02.UnlockedLevel)
+            {
+                ability01.next = Merge(ability01.next, ability02);
+                return ability01;
+            }
+            else
+            {
+                ability02.next = Merge(ability01, ability02.next);
+                return ability02;
+            }
+        }
+
+        private ItemAbility MergeSort(ItemAbility main)
+        {
+            if (main == null || main.next == null)
+                return main;
+
+            ItemAbility other = Split(main);
+
+            main   = MergeSort(main);
+            other = MergeSort(other);
+
+            return Merge(main, other);
+        }
+
     }
 
+    [System.Serializable]
     public class ItemAbility
     {
-
         private string abilityName;
 
         private string abilityDescription;
